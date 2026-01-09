@@ -1,0 +1,7 @@
+{
+  "name": "Copy of VoxMystic Narrator Studio",
+  "description": "An atmospheric text-to-speech studio powered by Gemini 2.5 Flash. Generate high-quality narrations with multiple distinct voices, mysterious personas, and real-time audio playback.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
