@@ -4,6 +4,13 @@ import { VoiceOption } from './types';
 export const VOICES: VoiceOption[] = [
   { 
     id: 'Kore', 
+    name: 'Rahul', 
+    description: 'Calm, rhythmic, and professional conversational voice.', 
+    previewColor: 'bg-indigo-400', 
+    customPersona: 'Speak in a calm, professional, and rhythmic mid-range male voice with a neutral, steady conversational pace and a hint of authority:' 
+  },
+  { 
+    id: 'Kore', 
     name: 'Julian', 
     description: 'Warm, clear, and professional male voice.', 
     previewColor: 'bg-blue-500', 

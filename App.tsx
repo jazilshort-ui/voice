@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [history, setHistory] = useState<NarrationHistoryItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [troubleshootingSteps, setTroubleshootingSteps] = useState<string[]>([]);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -77,6 +78,7 @@ const App: React.FC = () => {
     if (!text.trim()) return;
     setStatus(AppStatus.GENERATING);
     setErrorMessage(null);
+    setTroubleshootingSteps([]);
 
     try {
       const { audioUrl, blob } = await generateSpeech({
@@ -105,14 +107,46 @@ const App: React.FC = () => {
         audioRef.current.play();
       }
     } catch (err: any) {
+      console.error("Synthesizer Error:", err);
       setStatus(AppStatus.ERROR);
-      setErrorMessage(err.message || "Synthesizer encountered a rift. Please try again.");
+      
+      const errorMsg = err.message || "";
+      let suggestions: string[] = [
+        "Check your internet connection.",
+        "Ensure the text is not excessively long."
+      ];
+
+      if (errorMsg.includes("429")) {
+        setErrorMessage("Vocal Cords Fatigued (Rate Limit)");
+        suggestions = [
+          "Wait 30-60 seconds before trying again.",
+          "Reduce the frequency of your generation requests."
+        ];
+      } else if (errorMsg.includes("403") || errorMsg.includes("401")) {
+        setErrorMessage("Unauthorized Transmission");
+        suggestions = [
+          "Verify that your Gemini API key is active and correctly configured.",
+          "Check for project-level permissions in Google AI Studio."
+        ];
+      } else if (errorMsg.includes("SAFETY")) {
+        setErrorMessage("Narrative Blocked by Safety Protocols");
+        suggestions = [
+          "The script may contain content that triggers safety filters.",
+          "Try rephrasing the text to be more creative and less explicit."
+        ];
+      } else {
+        setErrorMessage("Synthesizer Rift: " + (errorMsg.slice(0, 100) || "Unknown interference."));
+        suggestions.push("Reload the studio and try a different narrator.");
+      }
+
+      setTroubleshootingSteps(suggestions);
     }
   };
 
   const processAudioFile = async (blob: Blob) => {
     setStatus(AppStatus.ANALYZING);
     setErrorMessage(null);
+    setTroubleshootingSteps([]);
 
     try {
       const reader = new FileReader();
@@ -144,7 +178,12 @@ const App: React.FC = () => {
       setStatus(AppStatus.IDLE);
     } catch (err: any) {
       setStatus(AppStatus.ERROR);
-      setErrorMessage(err.message || "Failed to decode the sonic fingerprint.");
+      setErrorMessage("Analysis Failure: " + (err.message || "Decoding rift."));
+      setTroubleshootingSteps([
+        "Ensure the audio sample is at least 5-10 seconds long.",
+        "Check that the file is a valid audio format (WAV, MP3, etc.).",
+        "Minimize background noise in the source recording."
+      ]);
     }
   };
 
@@ -172,7 +211,11 @@ const App: React.FC = () => {
       setStatus(AppStatus.RECORDING);
       startVisualizer(stream);
     } catch (err) {
-      setErrorMessage("Microphone access is required for real-time cloning.");
+      setErrorMessage("Microphone Access Denied");
+      setTroubleshootingSteps([
+        "Grant browser permissions for microphone access.",
+        "Ensure your microphone is properly connected and recognized by the OS."
+      ]);
     }
   };
 
@@ -345,11 +388,39 @@ const App: React.FC = () => {
                 </div>
 
                 {errorMessage && (
-                  <div className="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm flex items-center gap-3 animate-in slide-in-from-top-2">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {errorMessage}
+                  <div className="mt-8 p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-100 animate-in slide-in-from-top-4 duration-500 shadow-xl shadow-rose-950/20">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="bg-rose-500 p-2 rounded-xl text-white shadow-lg shadow-rose-500/40">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-black text-rose-300 uppercase tracking-wider text-sm">System Malfunction</h4>
+                        <p className="text-rose-400/80 font-medium">{errorMessage}</p>
+                      </div>
+                    </div>
+                    
+                    {troubleshootingSteps.length > 0 && (
+                      <div className="space-y-3 pt-4 border-t border-rose-500/20">
+                        <p className="text-[10px] font-black text-rose-300/40 uppercase tracking-widest">Troubleshooting Protocols</p>
+                        <ul className="space-y-2">
+                          {troubleshootingSteps.map((step, i) => (
+                            <li key={i} className="flex items-start gap-3 text-sm text-rose-200/70">
+                              <span className="mt-1 w-1 h-1 bg-rose-500 rounded-full flex-shrink-0"></span>
+                              {step}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <button 
+                      onClick={() => { setErrorMessage(null); setTroubleshootingSteps([]); }}
+                      className="mt-6 w-full py-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 rounded-xl text-rose-300 text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      Dismiss Error
+                    </button>
                   </div>
                 )}
               </section>
